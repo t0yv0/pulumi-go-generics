@@ -22,5 +22,22 @@ func NewCertificate(
 	name string,
 	args *CertificateArgs,
 ) (*Certificate, error) {
-	return &Certificate{}, nil
+
+	v1 := "v1"
+	v2 := "v2"
+
+	return &Certificate{
+
+		DomainValidationOptions: pulumi.Resolved(
+			ctx,
+			[]CertificateDomainValidationOption{
+				{
+					ResourceRecordValue: &v1,
+				},
+				{
+					ResourceRecordValue: &v2,
+				},
+			},
+		),
+	}, nil
 }

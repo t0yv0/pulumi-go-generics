@@ -5,8 +5,8 @@
 package main
 
 import (
-	//"fmt"
-	//"time"
+	"fmt"
+	"time"
 
 	pulumi "github.com/t0yv0/pulumi-go-generics/outputs"
 )
@@ -30,7 +30,7 @@ type StructArgs struct {
 // This is presents direct non-reflective approach, though reflection
 // may be preferable to cut the boilerplate.
 func (s StructArgs) ToOutput() pulumi.Output[Struct] {
-	return pulumi.Apply(s.Foo.Context(), func(t *pulumi.T) Struct {
+	return pulumi.Apply(pulumi.OutputContext(s.Foo), func(t *pulumi.T) Struct {
 		return Struct{
 			Foo: pulumi.Eval(t, s.Foo),
 			Bar: pulumi.Eval(t, s.Bar),
@@ -43,9 +43,18 @@ func (s StructArgs) ToOutput() pulumi.Output[Struct] {
 
 
 func Examples2(ctx *pulumi.Context) {
+	fmt.Printf("\n\nExamples2\n")
 
-	hello := pulumi.Unknown[string](ctx)
-	world := pulumi.Unknown[string](ctx)
+	hello := pulumi.Apply(ctx, func(*pulumi.T) string {
+		time.Sleep(1 * time.Second)
+		return "hello"
+	})
+
+	world := pulumi.Apply(ctx, func(*pulumi.T) string {
+		time.Sleep(1 * time.Second)
+		return "world"
+	})
+
 	monde := ctx.String("monde cruel")
 
 	var in pulumi.Output[Struct] = StructArgs{
@@ -61,34 +70,28 @@ func Examples2(ctx *pulumi.Context) {
 		}),
 	}
 
-	// // Note that the type of the Map is Map[string, map[string]string], not Map[string, Map[string]]. This is because
-	// // Map[K, V]'s underlying type is map[K]Input[V], so V must be the _resolved_ type of the Map element.
-	// var in2 Input[map[string]map[string]string] = Map[string, map[string]string]{
-	// 	"goodbye": Map[string, string]{
-	// 		"cruel": world,
-	// 	},
-	// }
+	pulumi.Debug(in)
 
-	// go func() {
-	// 	time.Sleep(1 * time.Second)
-	// 	hello.resolve("hello", true, false, nil)
-	// 	world.resolve("world", true, false, nil)
-	// }()
+	// Note that the type of the Map is Map[string, map[string]string], not Map[string, Map[string]]. This is because
+	// Map[K, V]'s underlying type is map[K]Input[V], so V must be the _resolved_ type of the Map element.
+	var in2 pulumi.Output[map[string]map[string]string] = pulumi.Map[string, map[string]string]{
+		"goodbye": pulumi.Map[string, string]{
+			"cruel": world,
+		},
+	}
+	pulumi.Debug(in2)
 
-	// // Type inference fails here in the same way it fails for Ptr[] above
-	// apply := Apply[Struct](in.ToOutput(), func(v Struct) (string, error) {
-	// 	return fmt.Sprintf("%#v", v), nil
-	// })
+	// Type inference fails here in the same way it fails for Ptr[] above
+	applied := pulumi.Apply(ctx, func(t *pulumi.T) string {
+		v := pulumi.Eval(t, in)
+		return fmt.Sprintf("%#v", v)
+	})
+	pulumi.Debug(applied)
 
-	// v, _, _, _, _ := apply.await()
-	// fmt.Printf("%v\n", v)
-
-	// v2, _, _, _, _ := in2.ToOutput().await()
-	// fmt.Printf("%#v\n", v2)
-
-	// // The compiler cannot infer T as string b/c the parameters to All are Input[T] rather than *Output[T]
-	// v3, _, _, _, _ := All[string](hello, world).await()
-	// fmt.Printf("%v %v\n", v3[0], v3[1])
-
-	// fmt.Printf("\n\nExamples2\n")
+	hw := pulumi.Apply(ctx, func(t *pulumi.T) string {
+		return fmt.Sprintf("%v %v\n",
+			pulumi.Eval(t, hello),
+			pulumi.Eval(t, world))
+	})
+	pulumi.Debug(hw)
 }

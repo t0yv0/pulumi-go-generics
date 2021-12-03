@@ -14,6 +14,9 @@ func (s *out[T]) ToOutput() Output[T] {
 }
 
 func normalize[T any](o Output[T]) *out[T] {
+	if o == nil {
+		panic("nil?")
+	}
 	for {
 		if r, ok := o.(*out[T]); ok {
 			return r
@@ -30,6 +33,6 @@ func toPromise[T any](o Output[T]) *p.Promise[result[T]] {
 	return normalize(o).promise
 }
 
-func context[T any](o Output[T]) *Context {
+func OutputContext[T any](o Output[T]) *Context {
 	return normalize(o).ctx
 }

@@ -6,11 +6,11 @@ type result[T any] struct {
 }
 
 func knownResult[T any](v T) result[T] {
-	return result[T]{v, info{isKnown: true}}
+	return result[T]{value: v}
 }
 
 func unknownResult[T any]() result[T] {
-	return result[T]{info: info{isKnown: false}}
+	return result[T]{info: info{isUnknown: true}}
 }
 
 func secretResult[T any](res result[T]) result[T] {

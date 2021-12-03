@@ -72,7 +72,7 @@ func LiftingExample(ctx *pulumi.Context) {
 
 // TODO sprintf, interpolation
 
-func RunExamples(ctx *pulumi.Context) {
+func Examples(ctx *pulumi.Context) {
 	ApplyExample(ctx)
 	AllExample(ctx)
 	LiftingExample(ctx)

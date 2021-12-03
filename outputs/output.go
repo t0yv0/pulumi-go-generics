@@ -26,12 +26,12 @@ func Rejected[T any](ctx *Context, err error) Output[T] {
 
 func Secret[T any](o Output[T]) Output[T] {
 	asSecretPromise := p.Map(secretResult[T])
-	return &out[T]{context(o), asSecretPromise(toPromise(o))}
+	return &out[T]{OutputContext(o), asSecretPromise(toPromise(o))}
 }
 
 func WithDependencies[T any](o Output[T], deps ...Resource) Output[T] {
 	withDeps := p.Map(func (r result[T]) result[T] {
 		return withDepsResult[T](r, deps)
 	})
-	return &out[T]{context(o), withDeps(toPromise(o))}
+	return &out[T]{OutputContext(o), withDeps(toPromise(o))}
 }

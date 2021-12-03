@@ -7,7 +7,7 @@ func (m Map[K,V]) ToOutput() Output[map[K]V] {
 
 	var ctx *Context
 	for _, v := range inner {
-		ctx = context(v)
+		ctx = OutputContext(v)
 		break
 	}
 
