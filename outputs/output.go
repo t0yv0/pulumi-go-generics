@@ -5,41 +5,31 @@ import (
 )
 
 type Output[T any] interface {
-	Context()   *Context
-	toPromise() *p.Promise[*outputResult[T]]
-}
-
-type out[T any] struct {
-	ctx     *Context
-	promise *p.Promise[*outputResult[T]]
-}
-
-func (s *out[T]) Context() *Context {
-	return s.ctx
-}
-
-func (s *out[T]) toPromise() *p.Promise[*outputResult[T]] {
-	return s.promise
-}
-
-func Unknown[T any](ctx *Context) Output[T] {
-	return &out[T]{ctx, p.Resolved(ctx, unknownOutputResult[T]())}
+	// When implementing the interface on a struct, return an
+	// output of another type. When consuming outputs, the
+	// framework will continue normalizing until it reaches a
+	// terminal internal representation.
+	ToOutput() Output[T]
 }
 
 func Resolved[T any](ctx *Context, value T) Output[T] {
 	return &out[T]{ctx, p.Resolved(ctx, knownOutputResult(value))}
 }
 
-func Secret[T any](o Output[T]) Output[T] {
-	asSecretPromise := p.Map(asSecretOutputResult[T])
-	return &out[T]{o.Context(), asSecretPromise(o.toPromise())}
-}
-
-func WithDependencies[T any](o Output[T], deps []Resource) Output[T] {
-	withDeps := p.Map(withDepsOutputResult[T](deps))
-	return &out[T]{o.Context(), withDeps(o.toPromise())}
+func Unknown[T any](ctx *Context) Output[T] {
+	return &out[T]{ctx, p.Resolved(ctx, unknownOutputResult[T]())}
 }
 
 func Rejected[T any](ctx *Context, err error) Output[T] {
 	return &out[T]{ctx, p.Rejected[*outputResult[T]](ctx, err)}
+}
+
+func Secret[T any](o Output[T]) Output[T] {
+	asSecretPromise := p.Map(asSecretOutputResult[T])
+	return &out[T]{context(o), asSecretPromise(toPromise(o))}
+}
+
+func WithDependencies[T any](o Output[T], deps ...Resource) Output[T] {
+	withDeps := p.Map(withDepsOutputResult[T](deps))
+	return &out[T]{context(o), withDeps(toPromise(o))}
 }

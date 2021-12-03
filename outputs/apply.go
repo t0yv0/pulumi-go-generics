@@ -31,7 +31,7 @@ func Apply[A any](ctx *Context, body func(t *T) A) Output[A] {
 }
 
 func Eval[A any](t *T, out Output[A]) A {
-	p := out.toPromise()
+	p := toPromise(out)
 	v, err := p.Await()
 	if err != nil {
 		panic(err) // TODO recover this in ApplyErr
@@ -42,7 +42,7 @@ func Eval[A any](t *T, out Output[A]) A {
 }
 
 func EvalErr[A any](t *T, out Output[A]) (A, error) {
-	p := out.toPromise()
+	p := toPromise(out)
 	v, err := p.Await()
 	if err != nil {
 		return v.value, err

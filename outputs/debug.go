@@ -5,7 +5,7 @@ import (
 )
 
 func Debug[T any](x Output[T]) {
-	v, err := x.toPromise().Await()
+	v, err := toPromise(x).Await()
 	if err != nil {
 		fmt.Printf("outputs.Debug: failed with %v\n", err)
 		return
