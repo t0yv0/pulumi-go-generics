@@ -14,7 +14,7 @@ import (
 
 func ApplyExample(ctx *pulumi.Context) {
 	fmt.Printf("\n\nApplyExample\n")
-	vpc := &Vpc{DnsName: pulumi.Resolved(ctx, "mycompany.com")}
+	vpc := &Vpc{DnsName: ctx.String("mycompany.com")}
 
 	url := pulumi.Apply(ctx, func(t *pulumi.T) string {
 		return "https://" + pulumi.Eval(t, vpc.DnsName)
@@ -29,8 +29,8 @@ type Vpc struct {
 
 func AllExample(ctx *pulumi.Context) {
 	fmt.Printf("\n\nAllExample\n")
-	sqlServer := &Named{pulumi.Resolved(ctx, "sql-server")}
-	database := &Named{pulumi.Resolved(ctx, "my-database")}
+	sqlServer := &Named{ctx.String("sql-server")}
+	database := &Named{ctx.String("my-database")}
 
 	connectionString := pulumi.Apply(ctx, func(t *pulumi.T) string {
 		server := pulumi.Eval(t, sqlServer.Name)
@@ -48,8 +48,8 @@ type Named struct {
 func LiftingExample(ctx *pulumi.Context) {
 	fmt.Printf("\n\nLifting Example\n")
 	cert, err := acm.NewCertificate(ctx, "cert", &acm.CertificateArgs{
-		DomainName:       pulumi.Resolved(ctx, "example"),
-		ValidationMethod: pulumi.Resolved(ctx, "DNS"),
+		DomainName:       ctx.String("example"),
+		ValidationMethod: ctx.String("DNS"),
 	})
 	if err != nil {
 		panic(err)
