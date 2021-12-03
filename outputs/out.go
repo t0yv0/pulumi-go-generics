@@ -6,7 +6,7 @@ import (
 
 type out[T any] struct {
 	ctx     *Context
-	promise *p.Promise[*outputResult[T]]
+	promise *p.Promise[result[T]]
 }
 
 func (s *out[T]) ToOutput() Output[T] {
@@ -26,7 +26,7 @@ func normalize[T any](o Output[T]) *out[T] {
 	}
 }
 
-func toPromise[T any](o Output[T]) *p.Promise[*outputResult[T]] {
+func toPromise[T any](o Output[T]) *p.Promise[result[T]] {
 	return normalize(o).promise
 }
 

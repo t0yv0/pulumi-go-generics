@@ -13,23 +13,25 @@ type Output[T any] interface {
 }
 
 func Resolved[T any](ctx *Context, value T) Output[T] {
-	return &out[T]{ctx, p.Resolved(ctx, knownOutputResult(value))}
+	return &out[T]{ctx, p.Resolved(ctx, knownResult[T](value))}
 }
 
 func Unknown[T any](ctx *Context) Output[T] {
-	return &out[T]{ctx, p.Resolved(ctx, unknownOutputResult[T]())}
+	return &out[T]{ctx, p.Resolved(ctx, unknownResult[T]())}
 }
 
 func Rejected[T any](ctx *Context, err error) Output[T] {
-	return &out[T]{ctx, p.Rejected[*outputResult[T]](ctx, err)}
+	return &out[T]{ctx, p.Rejected[result[T]](ctx, err)}
 }
 
 func Secret[T any](o Output[T]) Output[T] {
-	asSecretPromise := p.Map(asSecretOutputResult[T])
+	asSecretPromise := p.Map(secretResult[T])
 	return &out[T]{context(o), asSecretPromise(toPromise(o))}
 }
 
 func WithDependencies[T any](o Output[T], deps ...Resource) Output[T] {
-	withDeps := p.Map(withDepsOutputResult[T](deps))
+	withDeps := p.Map(func (r result[T]) result[T] {
+		return withDepsResult[T](r, deps)
+	})
 	return &out[T]{context(o), withDeps(toPromise(o))}
 }

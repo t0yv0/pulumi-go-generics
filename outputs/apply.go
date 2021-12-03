@@ -5,21 +5,23 @@ import (
 )
 
 type T struct {
-	result *outputResult[interface{}]
+	info info
 }
 
 func ApplyErr[A any](ctx *Context, body func(t *T) (A, error)) Output[A] {
-	t := &T{knownOutputResult[interface{}](nil)}
+	t := &T{}
 
-	promise, resolve, reject := p.NewPromise[*outputResult[A]](ctx)
+	promise, resolve, reject := p.NewPromise[result[A]](ctx)
 
 	go func() {
 		v, err := body(t)
 		if err != nil {
 			reject(err)
 		}
-		res := firstOutputResult(knownOutputResult(v), t.result)
-		resolve(res)
+		resolve(result[A]{
+			value: v,
+			info:  t.info,
+		})
 	}()
 	return &out[A]{ctx, promise}
 }
@@ -37,7 +39,7 @@ func Eval[A any](t *T, out Output[A]) A {
 		panic(err) // TODO recover this in ApplyErr
 	}
 
-	t.result = firstOutputResult(t.result, v)
+	t.info = infos(t.info, v.info)
 	return v.value
 }
 
@@ -48,6 +50,6 @@ func EvalErr[A any](t *T, out Output[A]) (A, error) {
 		return v.value, err
 	}
 
-	t.result = firstOutputResult(t.result, v)
+	t.info = infos(t.info, v.info)
 	return v.value, nil
 }
