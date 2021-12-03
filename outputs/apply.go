@@ -8,6 +8,14 @@ type T struct {
 	info info
 }
 
+func (t *T) Secret() {
+	t.info.isSecret = true
+}
+
+func (t *T) DependsOn(deps ...Resource) {
+	t.info.deps = append(t.info.deps, deps...)
+}
+
 func ApplyErr[A any](ctx *Context, body func(t *T) (A, error)) Output[A] {
 	t := &T{}
 
@@ -17,6 +25,7 @@ func ApplyErr[A any](ctx *Context, body func(t *T) (A, error)) Output[A] {
 		v, err := body(t)
 		if err != nil {
 			reject(err)
+			return
 		}
 		resolve(result[A]{
 			value: v,

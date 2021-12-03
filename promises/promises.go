@@ -83,37 +83,3 @@ func (p *Promise[T]) Await() (T, error) {
 	<- p.complete
  	return p.value, p.err
 }
-
-func MapErr[T any, U any](f func(T) (U, error)) func (*Promise[T]) *Promise[U] {
-	return func(p *Promise[T]) *Promise[U] {
-		switch p.state {
-		case ResolvedState:
-			v, err := f(p.value)
-			if err != nil {
-				return Rejected[U](p.observer, err)
-			} else {
-				return Resolved(p.observer, v)
-			}
-		case RejectedState:
-			return Rejected[U](p.observer, p.err)
-		case PendingState:
-			res, resolve, reject := NewPromise[U](p.observer)
-			go func() {
-				v, err := res.Await()
-				if err != nil {
-					reject(err)
-				} else {
-					resolve(v)
-				}
-			}()
-			return res
-		}
-		panic("Incomplete pattern match")
-	}
-}
-
-func Map[T any, U any](f func(T) U) func (*Promise[T]) *Promise[U] {
-	return MapErr(func (x T) (U, error) {
-		return f(x), nil
-	})
-}

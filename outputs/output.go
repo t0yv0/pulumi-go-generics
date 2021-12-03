@@ -24,14 +24,16 @@ func Rejected[T any](ctx *Context, err error) Output[T] {
 	return &out[T]{ctx, p.Rejected[result[T]](ctx, err)}
 }
 
-func Secret[T any](o Output[T]) Output[T] {
-	asSecretPromise := p.Map(secretResult[T])
-	return &out[T]{OutputContext(o), asSecretPromise(toPromise(o))}
+func Secret[A any](o Output[A]) Output[A] {
+	return Apply(OutputContext(o), func (t *T) A {
+		t.Secret()
+		return Eval(t, o)
+	})
 }
 
-func WithDependencies[T any](o Output[T], deps ...Resource) Output[T] {
-	withDeps := p.Map(func (r result[T]) result[T] {
-		return withDepsResult[T](r, deps)
+func WithDependencies[A any](o Output[A], deps ...Resource) Output[A] {
+	return Apply(OutputContext(o), func (t *T) A {
+		t.DependsOn(deps...)
+		return Eval(t, o)
 	})
-	return &out[T]{OutputContext(o), withDeps(toPromise(o))}
 }
