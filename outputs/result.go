@@ -94,7 +94,7 @@ func allOutputResults[T any](res []*outputResult[T]) *outputResult[[]T] {
 			values = append(values, r.value)
 		}
 		isSecret = isSecret || r.isSecret
-		deps = append(deps, r.deps)
+		deps = append(deps, r.deps...)
 	}
 	return &outputResult[[]T]{
 		value:    values,
@@ -102,6 +102,18 @@ func allOutputResults[T any](res []*outputResult[T]) *outputResult[[]T] {
 		isSecret: isSecret,
 		deps:     deps,
 	}
+}
+
+func firstOutputResult[T any, U any](a *outputResult[T], b *outputResult[U]) *outputResult[T] {
+	toT := mapOutputResult(func (x U) T {
+		var undefined T
+		return undefined
+	})
+	joined := allOutputResults([]*outputResult[T]{a, toT(b)})
+	fst := mapOutputResult(func (xs []T) T {
+		return xs[0]
+	})
+	return fst(joined)
 }
 
 func joinOutputResult[T any](res *outputResult[*outputResult[T]]) *outputResult[T] {

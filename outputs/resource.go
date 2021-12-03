@@ -1,3 +1,5 @@
 package outputs
 
-type Resource interface{}
+type Resource interface {
+	isResource() bool
+}
