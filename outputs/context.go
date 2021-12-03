@@ -9,3 +9,8 @@ type Context struct {
 }
 
 var _ p.Observer = &Context{}
+
+func NewContext() *Context {
+	w := p.NewWaiter()
+	return &Context{*w}
+}
