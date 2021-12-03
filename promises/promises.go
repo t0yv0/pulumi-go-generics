@@ -18,43 +18,53 @@ type Promise[T any] struct {
 
 	// non-nil iff `state == RejectedState`
 	err error
+
+	// threads through promise chains to simplify the API
+	observer Observer
 }
 
-func Resolved[T any](value T) *Promise[T] {
+func Resolved[T any](observer Observer, value T) *Promise[T] {
 	return &Promise[T]{
-		state: ResolvedState,
-		value: value,
+		state:    ResolvedState,
+		value:    value,
+		observer: observer,
 	}
 }
 
-func Rejected[T any](err error) *Promise[T] {
+func Rejected[T any](observer Observer, err error) *Promise[T] {
+	observer.Rejected(err)
 	return &Promise[T]{
-		state: RejectedState,
-		err:   err,
+		state:    RejectedState,
+		err:      err,
+		observer: observer,
 	}
 }
 
 // Builds a new Promise and gives a resolve and reject callbacks to
 // fullfill it. Only one of these callbacks should be called once (or
 // the code panics).
-func NewPromise[T any]() (*Promise[T], func(T), func(error)) {
+func NewPromise[T any](observer Observer) (*Promise[T], func(T), func(error)) {
 	complete := make(chan struct{})
 
 	f := &Promise[T]{
 		complete: complete,
 		state:    PendingState,
+		observer: observer,
 	}
+	observer.Created()
 
 	resolve := func(value T) {
 		f.value = value
 		f.state = ResolvedState
 		close(complete) // possible "panic: close of closed channel"
+		observer.Resolved()
 	}
 
 	reject := func(err error) {
 		f.err = err
 		f.state = RejectedState
 		close(complete) // possible "panic: close of closed channel"
+		observer.Rejected(err)
 	}
 
 	return f, resolve, reject
@@ -72,14 +82,14 @@ func MapErr[T any, U any](f func(T) (U, error)) func (*Promise[T]) *Promise[U] {
 		case ResolvedState:
 			v, err := f(p.value)
 			if err != nil {
-				res = Rejected[U](err)
+				res = Rejected[U](p.observer, err)
 			} else {
-				res = Resolved(v)
+				res = Resolved(p.observer, v)
 			}
 		case RejectedState:
-			return Rejected[U](p.err)
+			return Rejected[U](p.observer, p.err)
 		case PendingState:
-			res, resolve, reject := NewPromise[U]()
+			res, resolve, reject := NewPromise[U](p.observer)
 			go func() {
 				v, err := res.Await()
 				if err != nil {
@@ -98,9 +108,9 @@ func Map[T any, U any](f func(T) U) func (*Promise[T]) *Promise[U] {
 	})
 }
 
-func All[T any](promises []*Promise[T]) *Promise[[]T] {
+func All[T any](observer Observer, promises []*Promise[T]) *Promise[[]T] {
 	if len(promises) == 0 {
-		return Resolved([]T{})
+		return Resolved(observer, []T{})
 	}
 
 	allPending := true
@@ -114,14 +124,14 @@ func All[T any](promises []*Promise[T]) *Promise[[]T] {
 		values := []T{}
 		for _, p := range promises {
 			if p.state == RejectedState {
-				return Rejected[[]T](p.err)
+				return Rejected[[]T](observer, p.err)
 			}
 			values = append(values, p.value)
 		}
-		return Resolved(values)
+		return Resolved(observer, values)
 	}
 
-	result, resolve, reject := NewPromise[[]T]()
+	result, resolve, reject := NewPromise[[]T](observer)
 
 	completed := make(chan int)
 
@@ -157,11 +167,11 @@ func All[T any](promises []*Promise[T]) *Promise[[]T] {
 func Join[T any](pp *Promise[*Promise[T]]) *Promise[T] {
 	switch pp.state {
 	case RejectedState:
-		return Rejected[T](pp.err)
+		return Rejected[T](pp.observer, pp.err)
 	case ResolvedState:
 		return pp.value
 	default:
-		result, resolve, reject := NewPromise[T]()
+		result, resolve, reject := NewPromise[T](pp.observer)
 		go func() {
 			f, err := pp.Await()
 			if err != nil {
