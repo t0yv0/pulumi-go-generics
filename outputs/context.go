@@ -14,3 +14,13 @@ func NewContext() *Context {
 	w := p.NewWaiter()
 	return &Context{*w}
 }
+
+// helpers
+
+func (ctx *Context) Int(n int) Output[int] {
+	return Resolved(ctx, n)
+}
+
+func (ctx *Context) String(s string) Output[string] {
+	return Resolved(ctx, s)
+}

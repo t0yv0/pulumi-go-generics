@@ -1,5 +1,9 @@
 package promises
 
+import (
+	"fmt"
+)
+
 const (
 	PendingState = iota
 	ResolvedState
@@ -26,20 +30,26 @@ type Promise[T any] struct {
 func Resolved[T any](observer Observer, value T) *Promise[T] {
 	observer.Created()
 	observer.Resolved()
+	c := make(chan struct{})
+	close(c)
 	return &Promise[T]{
 		state:    ResolvedState,
 		value:    value,
 		observer: observer,
+		complete: c,
 	}
 }
 
 func Rejected[T any](observer Observer, err error) *Promise[T] {
 	observer.Created()
 	observer.Rejected(err)
+	c := make(chan struct{})
+	close(c)
 	return &Promise[T]{
 		state:    RejectedState,
 		err:      err,
 		observer: observer,
+		complete: c,
 	}
 }
 
@@ -66,6 +76,7 @@ func NewPromise[T any](observer Observer) (*Promise[T], func(T), func(error)) {
 	reject := func(err error) {
 		f.err = err
 		f.state = RejectedState
+		fmt.Printf("reject error=%v\n", err)
 		close(complete) // possible "panic: close of closed channel"
 		observer.Rejected(err)
 	}
@@ -73,7 +84,7 @@ func NewPromise[T any](observer Observer) (*Promise[T], func(T), func(error)) {
 	return f, resolve, reject
 }
 
-func (p Promise[T]) Await() (T, error) {
+func (p *Promise[T]) Await() (T, error) {
 	<- p.complete
  	return p.value, p.err
 }
