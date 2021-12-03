@@ -20,7 +20,7 @@ https://github.com/t0yv0/pulumi-nix-devenv
 
 ### Problem: Input and Output types
 
-Having separate `Input[T]` and `Output[T]` has issues as Pat Gavlin
+Having separate `Input[T]` and `Output[T]` has issues as @pgavlin
 pointed out.
 
 1. `map[string]Input[T]` and `map[string]Output[T]` do not safely
