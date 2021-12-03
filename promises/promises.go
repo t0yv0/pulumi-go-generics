@@ -24,6 +24,8 @@ type Promise[T any] struct {
 }
 
 func Resolved[T any](observer Observer, value T) *Promise[T] {
+	observer.Created()
+	observer.Resolved()
 	return &Promise[T]{
 		state:    ResolvedState,
 		value:    value,
@@ -32,6 +34,7 @@ func Resolved[T any](observer Observer, value T) *Promise[T] {
 }
 
 func Rejected[T any](observer Observer, err error) *Promise[T] {
+	observer.Created()
 	observer.Rejected(err)
 	return &Promise[T]{
 		state:    RejectedState,
